@@ -1,0 +1,87 @@
+{
+	"info": {
+		"_postman_id": "942d7d2c-ac35-437b-8e44-47e2a3e56ee0",
+		"name": "Import CSV",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "2043803"
+	},
+	"item": [
+		{
+			"name": "Get",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "amount",
+							"value": "3",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/user?email=diogo.amaral@gmail.com",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"user"
+					],
+					"query": [
+						{
+							"key": "email",
+							"value": "diogo.amaral@gmail.com"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "upload",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-Ctx-Correlation-Id",
+						"value": "{{$guid}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "users",
+							"type": "file",
+							"src": "/Users/damaral/Desktop/example_s3.csv"
+						}
+					]
+				},
+				"url": {
+					"raw": "localhost:8080/campaign/73e5b986-986c-4abb-9e6c-d26c880c7d4a/users/bulk",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"campaign",
+						"73e5b986-986c-4abb-9e6c-d26c880c7d4a",
+						"users",
+						"bulk"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

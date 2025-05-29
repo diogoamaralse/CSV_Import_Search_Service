@@ -2,9 +2,7 @@ package service
 
 import (
 	"ImportAndSearchCsvFile/pkg/models"
-
 	"encoding/csv"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -19,8 +17,8 @@ type Service interface {
 }
 
 type UserStore struct {
-	mu sync.RWMutex
 	// I decided to use email as key for fast lookups
+	mu    sync.RWMutex
 	users map[string]models.User
 }
 
@@ -32,7 +30,7 @@ func NewUserStore() *UserStore {
 
 func (s *UserStore) ImportUsers(reader io.Reader) error {
 	r := csv.NewReader(reader)
-	r.Comma = '\t'
+	r.TrimLeadingSpace = true
 	r.TrimLeadingSpace = true
 
 	headers, err := r.Read()
@@ -44,7 +42,7 @@ func (s *UserStore) ImportUsers(reader io.Reader) error {
 		headers[i] = strings.ToLower(strings.ReplaceAll(h, " ", "_"))
 	}
 
-	var newUsers = make(map[string]models.User)
+	newUsers := make(map[string]models.User)
 	for {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -81,48 +79,42 @@ func (s *UserStore) GetUserByEmail(email string) (models.User, bool) {
 
 func parseUser(headers []string, record []string) (models.User, error) {
 	var user models.User
-	var err error
 
-	if len(record) != len(headers) {
-		return user, errors.New("record length doesn't match headers")
+	if len(headers) != len(record) {
+		return user, fmt.Errorf("header/record length mismatch: got %d headers and %d fields", len(headers), len(record))
 	}
 
 	fieldMap := make(map[string]string)
 	for i, header := range headers {
-		fieldMap[header] = record[i]
+		fieldMap[header] = strings.TrimSpace(record[i])
 	}
 
-	user.ID, err = parseInt(fieldMap["id"])
+	var err error
+
+	user.ID, err = strconv.Atoi(fieldMap["id"])
 	if err != nil {
-		return user, fmt.Errorf("invalid id: %v", err)
+		return user, fmt.Errorf("invalid id '%s': %v", fieldMap["id"], err)
 	}
 
 	user.FirstName = fieldMap["first_name"]
 	user.LastName = fieldMap["last_name"]
 	user.Email = fieldMap["email_address"]
 
-	user.CreatedAt, err = parseTimestamp(fieldMap["created_at"])
-	if err != nil {
+	if user.CreatedAt, err = parseTimestamp(fieldMap["created_at"]); err != nil {
 		return user, fmt.Errorf("invalid created_at: %v", err)
 	}
-
-	user.DeletedAt, err = parseTimestamp(fieldMap["deleted_at"])
-	if err != nil {
+	if user.DeletedAt, err = parseTimestamp(fieldMap["deleted_at"]); err != nil {
 		return user, fmt.Errorf("invalid deleted_at: %v", err)
 	}
-
-	user.MergedAt, err = parseTimestamp(fieldMap["merged_at"])
-	if err != nil {
+	if user.MergedAt, err = parseTimestamp(fieldMap["merged_at"]); err != nil {
 		return user, fmt.Errorf("invalid merged_at: %v", err)
 	}
-
-	user.ParentUserID, err = parseInt(fieldMap["parent_user_id"])
-	if err != nil {
+	if user.ParentUserID, err = parseInt(fieldMap["parent_user_id"]); err != nil {
 		return user, fmt.Errorf("invalid parent_user_id: %v", err)
 	}
 
 	if err := user.Validate(); err != nil {
-		return user, fmt.Errorf("Validation error:", err)
+		return user, fmt.Errorf("validation error: %w", err)
 	}
 
 	return user, nil
@@ -140,7 +132,7 @@ func parseTimestamp(s string) (int64, error) {
 		return -1, nil
 	}
 
-	if strings.Contains(s, "E") || strings.Contains(s, "e") {
+	if strings.ContainsAny(s, "Ee") {
 		f, err := strconv.ParseFloat(s, 64)
 		if err != nil {
 			return 0, err

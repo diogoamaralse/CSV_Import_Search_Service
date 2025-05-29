@@ -28,7 +28,7 @@ func TestAPIEndpoints(t *testing.T) {
 	defer ts.Close()
 
 	t.Run("test import and search", func(t *testing.T) {
-		csvData := `id,first_name,last_name,email,created_at,deleted_at,merged_at,parent_user_id
+		csvData := `id,first_name,last_name,email_address,created_at,deleted_at,merged_at,parent_user_id
 1,Test,User,test@example.com,123456789,0,0,0`
 
 		body := new(bytes.Buffer)
@@ -37,31 +37,29 @@ func TestAPIEndpoints(t *testing.T) {
 		part, err := writer.CreateFormFile("file", "test.csv")
 		assert.NoError(t, err)
 
-		_, err = io.WriteString(part, csvData)
+		_, err = part.Write([]byte(csvData))
 		assert.NoError(t, err)
-
-		err = writer.Close()
-		assert.NoError(t, err)
+		assert.NoError(t, writer.Close())
 
 		req, err := http.NewRequest("POST", ts.URL+"/api/v1/user", body)
 		assert.NoError(t, err)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
-		client := &http.Client{}
-		resp, err := client.Do(req)
+		resp, err := http.DefaultClient.Do(req)
 		assert.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-		resp.Body.Close()
 
 		resp, err = http.Get(ts.URL + "/api/v1/user?email=test@example.com")
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-
 		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		bodyBytes, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
+
 		assert.Contains(t, string(bodyBytes), `"email":"test@example.com"`)
+		assert.Contains(t, string(bodyBytes), `"first_name":"Test"`)
 	})
 }
 

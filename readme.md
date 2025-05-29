@@ -27,3 +27,9 @@ CSV_Import_Search_Service/
    git clone https://github.com/diogoamaralse/CSV_Import_Search_Service.git
    cd CSV_Import_Search_Service
    go run ./cmd/main.go
+
+
+endpoints:
+
+GET -> /api/v1/user?email=diogo.amaral@gmail.com
+POST -> /api/v1/user [multipart] key file in a CSV format
